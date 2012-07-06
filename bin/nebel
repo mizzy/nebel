@@ -12,6 +12,17 @@ require 'liquid'
 require 'redcarpet'
 require 'optparse'
 
+def inject_options(nebelrc)
+  extra_args_string = File.open(nebelrc).read
+  extra_args        = extra_args_string.split(/\n+/).map {|l| l.split}.flatten
+  puts "Using #{extra_args.join(" ")} from #{nebelrc}"
+  ARGV << extra_args
+  ARGV.flatten!
+end
+
+nebelrc = File.join(File.expand_path("~"), ".nebelrc")
+inject_options(nebelrc) if File.exist?(nebelrc)
+
 options = {
   :base_url     => "/blog",
   :archive      => false,
@@ -19,10 +30,18 @@ options = {
 }
 
 OptionParser.new { |opts|
-  opts.on('-b', '--base-url [PATH]', String, "Serve website from a given base URL\t(default '/blog')") { |val| options[:base_url] = val }
-  opts.on('-a', '--archive', "Generate archive pages\t\t\t(default '/archive')")                       { options[:archive]      = true }
-  opts.on('--no-clean-dir', "Doesn't remove files in public dir")                                      { options[:no_clean_dir] = true }
-  opts.on('-h', '--help',"Show this message") { puts opts; exit 0 }
+  opts.on('-b', '--base-url [PATH]', String, "Serve website from a given base URL\t(default '/blog')") do |val|
+    options[:base_url] = val == "/" ? "" : val
+  end
+  opts.on('-a', '--archive', "Generate archive pages\t\t\t(default '/archive')") do
+    options[:archive] = true
+  end
+  opts.on('--no-clean-dir', "Doesn't remove files in public dir") do
+    options[:no_clean_dir] = true
+  end
+  opts.on('-h', '--help',"Show this message") do
+    puts opts; exit 0
+  end
 }.parse!
 
 def parse(file)
