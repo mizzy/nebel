@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name        = "nebel"
-  s.version     = "0.0.1"
+  s.version     = "0.0.2"
   s.authors     = ["Gosuke Miyashita"]
   s.email       = ["gosukenator@gmail.com"]
   s.homepage    = "https://github.com/mizzy/nebel"
