@@ -1,2 +1,3 @@
 # go-nebel
-A static site generator
+
+This static site generator is a Go implementation of [nebel](https://github.com/mizzy/nebel).
