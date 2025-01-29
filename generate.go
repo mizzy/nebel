@@ -121,6 +121,43 @@ func Generate() error {
 		return err
 	}
 
+	// Copy files and directories from "static" to "public"
+	staticDir := "static"
+	publicDir := "public"
+
+	err = filepath.Walk(staticDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relativePath, err := filepath.Rel(staticDir, path)
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(publicDir, relativePath)
+
+		if info.IsDir() {
+			return os.MkdirAll(targetPath, os.ModePerm)
+		}
+
+		input, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		err = os.WriteFile(targetPath, input, info.Mode())
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
