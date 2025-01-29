@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/yosssi/gohtml"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer/html"
@@ -95,7 +96,7 @@ func Generate() error {
 				return err
 			}
 
-			err = os.WriteFile(path, []byte(post.FullContent), 0644)
+			err = os.WriteFile(path, []byte(gohtml.Format(post.FullContent)), 0644)
 			if err != nil {
 				return err
 			}
@@ -110,7 +111,7 @@ func Generate() error {
 	}
 
 	path := filepath.Join("public", "index.html")
-	err = os.WriteFile(path, []byte(*indexHTML), 0644)
+	err = os.WriteFile(path, []byte(gohtml.Format(*indexHTML)), 0644)
 	if err != nil {
 		return err
 	}
