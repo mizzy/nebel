@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"text/template"
 	"time"
@@ -35,7 +36,6 @@ type Post struct {
 }
 
 func Generate() error {
-	// Set Title, Date and RawContent to Post objects
 	posts, err := createPostObjects()
 	if err != nil {
 		return err
@@ -45,65 +45,71 @@ func Generate() error {
 		return posts[i].Date.Before(posts[j].Date)
 	})
 
+	if err := processPosts(posts); err != nil {
+		return err
+	}
+
+	if err := writePostFiles(posts); err != nil {
+		return err
+	}
+
+	if err := generateIndexHTML(posts); err != nil {
+		return err
+	}
+
+	if err := generateAtomXML(posts); err != nil {
+		return err
+	}
+
+	return copyStaticFiles()
+}
+
+func processPosts(posts []*Post) error {
 	count := 1
 	for pos, post := range posts {
-		// Convert Markdown to HTML and set to ParsedContent
-		err := post.convertMarkdown()
-		if err != nil {
+		if err := post.convertMarkdown(); err != nil {
 			return err
 		}
 
-		// Set Path
 		currentDate := post.Date.Format("2006/01/02")
-
-		if pos > 0 {
-			prevDate := posts[pos-1].Date.Format("2006/01/02")
-
-			if prevDate == currentDate {
-				count++
-			} else {
-				count = 1
-			}
+		if pos > 0 && posts[pos-1].Date.Format("2006/01/02") == currentDate {
+			count++
+		} else if pos > 0 {
+			count = 1
 		}
 
 		post.Path = fmt.Sprintf("/blog/%s/%d", currentDate, count)
 
-		// Set PrevPost and NextPost
-		if pos == 0 {
-			post.PrevPost = nil
-		} else {
+		if pos > 0 {
 			post.PrevPost = posts[pos-1]
 		}
-
-		if pos == len(posts)-1 {
-			post.NextPost = nil
-		} else {
+		if pos < len(posts)-1 {
 			post.NextPost = posts[pos+1]
 		}
 	}
+	return nil
+}
 
-	// Process layout,
+func writePostFiles(posts []*Post) error {
 	for pos, post := range posts {
-		err = post.processLayout()
-		if err != nil {
+		if err := post.processLayout(); err != nil {
 			return err
 		}
 
 		if pos > len(posts)-3 {
 			path := filepath.Join("public", post.Path, "index.html")
-			err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
-			if err != nil {
+			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 				return err
 			}
-
-			err = os.WriteFile(path, []byte(gohtml.Format(post.FullContent)), 0644)
-			if err != nil {
+			if err := os.WriteFile(path, []byte(formatHTML(post.FullContent)), 0644); err != nil {
 				return err
 			}
 		}
 	}
+	return nil
+}
 
-	// Generate /index.html
+func generateIndexHTML(posts []*Post) error {
 	latestPost := posts[len(posts)-1]
 	indexHTML, err := latestPost.processPostTemplate(true)
 	if err != nil {
@@ -111,32 +117,21 @@ func Generate() error {
 	}
 
 	path := filepath.Join("public", "index.html")
-	err = os.WriteFile(path, []byte(gohtml.Format(*indexHTML)), 0644)
-	if err != nil {
-		return err
-	}
+	return os.WriteFile(path, []byte(formatHTML(*indexHTML)), 0644)
+}
 
-	// Generate atom.xml
-	err = generateAtomXML(posts)
-	if err != nil {
-		return err
-	}
-
-	// Copy files and directories from "static" to "public"
-	staticDir := "static"
-	publicDir := "public"
-
-	err = filepath.Walk(staticDir, func(path string, info os.FileInfo, err error) error {
+func copyStaticFiles() error {
+	return filepath.Walk("static", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		relativePath, err := filepath.Rel(staticDir, path)
+		relativePath, err := filepath.Rel("static", path)
 		if err != nil {
 			return err
 		}
 
-		targetPath := filepath.Join(publicDir, relativePath)
+		targetPath := filepath.Join("public", relativePath)
 
 		if info.IsDir() {
 			return os.MkdirAll(targetPath, os.ModePerm)
@@ -147,19 +142,8 @@ func Generate() error {
 			return err
 		}
 
-		err = os.WriteFile(targetPath, input, info.Mode())
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return os.WriteFile(targetPath, input, info.Mode())
 	})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func createPostObjects() ([]*Post, error) {
@@ -202,12 +186,7 @@ func generateAtomXML(posts []*Post) error {
 	}
 
 	path := filepath.Join("public", "atom.xml")
-	err = os.WriteFile(path, []byte(buf.String()), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
 func createPostObject(file os.DirEntry) (*Post, error) {
@@ -267,7 +246,7 @@ func createPostObject(file os.DirEntry) (*Post, error) {
 	}
 
 	if post.Date.IsZero() {
-		post.Date, err = time.ParseInLocation("2006-01-02 15:04", header.Date, time.FixedZone("Asia/Tokyo", 9*60*60))
+		post.Date, _ = time.ParseInLocation("2006-01-02 15:04", header.Date, time.FixedZone("Asia/Tokyo", 9*60*60))
 	}
 
 	return post, nil
@@ -327,4 +306,16 @@ func (p *Post) processPostTemplate(index bool) (*string, error) {
 
 func formatDate(t time.Time, layout string) string {
 	return t.Format(layout)
+}
+
+// formatHTML formats HTML and cleans up whitespace inside inline <code> tags
+// that gohtml.Format() incorrectly adds
+func formatHTML(html string) string {
+	formatted := gohtml.Format(html)
+
+	// Remove whitespace inside inline <code> tags
+	// Pattern matches <code> followed by whitespace, content, whitespace, </code>
+	// but excludes <pre><code> blocks (which are already handled correctly by gohtml)
+	re := regexp.MustCompile(`(?s)<code>\s*(.*?)\s*</code>`)
+	return re.ReplaceAllString(formatted, "<code>$1</code>")
 }
