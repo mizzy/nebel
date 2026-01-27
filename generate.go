@@ -33,6 +33,7 @@ type Post struct {
 	PrevPost      *Post
 	FullContent   string
 	Index         bool
+	OGImagePath   string
 }
 
 func Generate() error {
@@ -79,6 +80,7 @@ func processPosts(posts []*Post) error {
 		}
 
 		post.Path = fmt.Sprintf("/blog/%s/%d", currentDate, count)
+		post.OGImagePath = post.Path + "/ogp.png"
 
 		if pos > 0 {
 			post.PrevPost = posts[pos-1]
@@ -97,11 +99,18 @@ func writePostFiles(posts []*Post) error {
 		}
 
 		if pos > len(posts)-3 {
-			path := filepath.Join("public", post.Path, "index.html")
-			if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+			outputDir := filepath.Join("public", post.Path)
+			if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 				return err
 			}
+
+			path := filepath.Join(outputDir, "index.html")
 			if err := os.WriteFile(path, []byte(formatHTML(post.FullContent)), 0644); err != nil {
+				return err
+			}
+
+			// Generate OGP image
+			if err := post.generateOGImage(outputDir); err != nil {
 				return err
 			}
 		}
