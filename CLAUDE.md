@@ -1,9 +1,12 @@
 # Nebel Static Site Generator
 
 ## Project Overview
-Nebel is a static site generator written in Go that converts Markdown files into HTML websites.
+
+Nebel is a static site generator written in Go that converts Markdown
+files into HTML websites.
 
 ## Build Commands
+
 ```bash
 # Build the project
 go build -o nebel cmd/nebel/main.go
@@ -19,7 +22,8 @@ go run cmd/nebel/main.go generate
 ```
 
 ## Project Structure
-```
+
+```text
 .
 ├── cmd/
 │   └── nebel/
@@ -31,13 +35,21 @@ go run cmd/nebel/main.go generate
 ```
 
 ## Key Features
+
 - Markdown to HTML conversion
 - Static file copying from "static" to "public" directories
 - Site scaffolding with `new` command
 - HTML formatting and generation
 
 ## Development Notes
+
 - The project uses Go modules for dependency management
 - Main commands are `new` and `generate`
 - Static files are copied from a "static" directory to "public" during generation
 - HTML output is formatted for readability
+
+## Git Workflow
+
+- **Never commit directly to main branch**
+- Always create a feature branch and submit a Pull Request
+- PRs should be reviewed before merging
