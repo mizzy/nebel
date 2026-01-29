@@ -11,11 +11,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/goccy/go-yaml"
 	"github.com/yosssi/gohtml"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/renderer/html"
+	gmhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 type Header struct {
@@ -263,11 +265,19 @@ func createPostObject(file os.DirEntry) (*Post, error) {
 
 func (p *Post) convertMarkdown() error {
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(
+			extension.GFM,
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("nord"),
+				highlighting.WithFormatOptions(
+					html.WithClasses(true),
+				),
+			),
+		),
 		goldmark.WithRendererOptions(
-			html.WithHardWraps(),
-			html.WithXHTML(),
-			html.WithUnsafe(),
+			gmhtml.WithHardWraps(),
+			gmhtml.WithXHTML(),
+			gmhtml.WithUnsafe(),
 		))
 
 	var buf bytes.Buffer
