@@ -8,7 +8,6 @@ import (
 	_ "image/png"
 	"path/filepath"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/fogleman/gg"
 	"golang.org/x/image/font"
@@ -38,7 +37,13 @@ func (p *Post) generateOGImage(outputDir string) error {
 		return err
 	}
 
-	fontSize := calculateFontSize(p.Title)
+	maxWidth := float64(ogImageWidth - 160) // 80px padding on each side
+
+	// Calculate font size and wrap text, reducing font size if too many lines
+	fontSize, lines, err := calculateFontSizeAndWrap(dc, f, p.Title, maxWidth)
+	if err != nil {
+		return err
+	}
 
 	face, err := opentype.NewFace(f, &opentype.FaceOptions{
 		Size:    fontSize,
@@ -53,10 +58,6 @@ func (p *Post) generateOGImage(outputDir string) error {
 
 	// Text color (dark gray for white background)
 	dc.SetColor(color.RGBA{45, 45, 45, 255})
-
-	// Calculate text wrapping
-	maxWidth := float64(ogImageWidth - 160) // 80px padding on each side
-	lines := wrapText(dc, p.Title, maxWidth)
 
 	// Calculate total text height
 	lineHeight := fontSize * 1.4
@@ -138,21 +139,41 @@ func drawFooter(dc *gg.Context, f *opentype.Font, date string) {
 	dc.DrawStringAnchored(date, separatorX-15, textY, 1, 0.5)
 }
 
-func calculateFontSize(title string) float64 {
-	length := utf8.RuneCountInString(title)
+func calculateFontSizeAndWrap(dc *gg.Context, f *opentype.Font, title string, maxWidth float64) (float64, []string, error) {
+	fontSizes := []float64{72, 60, 48, 40, 32, 28, 24, 20, 18}
+	maxLines := 1
 
-	switch {
-	case length <= 12:
-		return 72
-	case length <= 18:
-		return 60
-	case length <= 25:
-		return 48
-	case length <= 35:
-		return 40
-	default:
-		return 32
+	for _, fontSize := range fontSizes {
+		face, err := opentype.NewFace(f, &opentype.FaceOptions{
+			Size:    fontSize,
+			DPI:     72,
+			Hinting: font.HintingFull,
+		})
+		if err != nil {
+			return 0, nil, err
+		}
+
+		dc.SetFontFace(face)
+		lines := wrapText(dc, title, maxWidth)
+
+		if len(lines) <= maxLines {
+			return fontSize, lines, nil
+		}
 	}
+
+	// Return smallest font size if still too many lines
+	smallestSize := fontSizes[len(fontSizes)-1]
+	face, err := opentype.NewFace(f, &opentype.FaceOptions{
+		Size:    smallestSize,
+		DPI:     72,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		return 0, nil, err
+	}
+	dc.SetFontFace(face)
+	lines := wrapText(dc, title, maxWidth)
+	return smallestSize, lines, nil
 }
 
 func wrapText(dc *gg.Context, text string, maxWidth float64) []string {
