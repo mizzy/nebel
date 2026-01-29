@@ -100,7 +100,7 @@ func writePostFiles(posts []*Post) error {
 			return err
 		}
 
-		if pos > len(posts)-3 {
+		if pos > len(posts)-10 {
 			outputDir := filepath.Join("public", post.Path)
 			if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 				return err
