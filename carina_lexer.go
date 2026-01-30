@@ -20,7 +20,7 @@ func init() {
 					{Pattern: `#.*$`, Type: chroma.Comment, Mutator: nil},
 
 					// Keywords
-					{Pattern: `\b(provider|let|backend|import|as|input|output)\b`, Type: chroma.Keyword, Mutator: nil},
+					{Pattern: `\b(provider|let|read|backend|import|as|input|output)\b`, Type: chroma.Keyword, Mutator: nil},
 
 					// Built-in types/functions
 					{Pattern: `\b(ref|list|bool|cidr|string|number)\b`, Type: chroma.KeywordType, Mutator: nil},
@@ -29,7 +29,7 @@ func init() {
 					{Pattern: `\b(true|false)\b`, Type: chroma.KeywordConstant, Mutator: nil},
 
 					// Resource types (aws.s3.bucket, etc.)
-					{Pattern: `(aws|gcp|azure)\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*`, Type: chroma.NameClass, Mutator: nil},
+					{Pattern: `(aws|awscc|gcp|azure)\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*`, Type: chroma.NameClass, Mutator: nil},
 
 					// Region constants (aws.Region.xxx)
 					{Pattern: `aws\.Region\.[a-z][a-z0-9_]*`, Type: chroma.NameConstant, Mutator: nil},
