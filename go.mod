@@ -8,8 +8,9 @@ require (
 	github.com/fogleman/gg v1.3.0
 	github.com/goccy/go-yaml v1.15.15
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
-	github.com/yuin/goldmark v1.7.8
+	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
+	go.abhg.dev/goldmark/mermaid v0.6.0
 	golang.org/x/image v0.35.0
 )
 

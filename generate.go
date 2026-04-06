@@ -18,6 +18,7 @@ import (
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	gmhtml "github.com/yuin/goldmark/renderer/html"
+	"go.abhg.dev/goldmark/mermaid"
 )
 
 type Header struct {
@@ -273,6 +274,10 @@ func (p *Post) convertMarkdown() error {
 					html.WithClasses(true),
 				),
 			),
+			&mermaid.Extender{
+				RenderMode: mermaid.RenderModeClient,
+				NoScript:   true,
+			},
 		),
 		goldmark.WithRendererOptions(
 			gmhtml.WithHardWraps(),
