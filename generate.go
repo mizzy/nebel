@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	stdhtml "html"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"text/template"
 	"time"
 
@@ -37,6 +39,7 @@ type Post struct {
 	FullContent   string
 	Index         bool
 	OGImagePath   string
+	Description   string
 }
 
 func Generate() error {
@@ -74,6 +77,8 @@ func processPosts(posts []*Post) error {
 		if err := post.convertMarkdown(); err != nil {
 			return err
 		}
+
+		post.generateDescription()
 
 		currentDate := post.Date.Format("2006/01/02")
 		if pos > 0 && posts[pos-1].Date.Format("2006/01/02") == currentDate {
@@ -294,6 +299,28 @@ func (p *Post) convertMarkdown() error {
 	p.ParsedContent = buf.String()
 
 	return nil
+}
+
+var (
+	preBlockRe   = regexp.MustCompile(`(?s)<pre.*?</pre>`)
+	htmlTagRe    = regexp.MustCompile(`<[^>]*>`)
+	whitespaceRe = regexp.MustCompile(`\s+`)
+)
+
+// generateDescription extracts plain text from the parsed content and uses
+// the first 120 characters as the meta description
+func (p *Post) generateDescription() {
+	text := preBlockRe.ReplaceAllString(p.ParsedContent, " ")
+	text = htmlTagRe.ReplaceAllString(text, " ")
+	text = stdhtml.UnescapeString(text)
+	text = strings.TrimSpace(whitespaceRe.ReplaceAllString(text, " "))
+
+	runes := []rune(text)
+	if len(runes) > 120 {
+		text = string(runes[:120]) + "…"
+	}
+
+	p.Description = stdhtml.EscapeString(text)
 }
 
 func (p *Post) processLayout() error {
