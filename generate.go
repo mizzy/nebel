@@ -64,6 +64,10 @@ func Generate() error {
 		return err
 	}
 
+	if err := generateArchiveHTML(posts); err != nil {
+		return err
+	}
+
 	if err := generateAtomXML(posts); err != nil {
 		return err
 	}
@@ -135,6 +139,38 @@ func generateIndexHTML(posts []*Post) error {
 
 	path := filepath.Join("public", "index.html")
 	return os.WriteFile(path, []byte(formatHTML(*indexHTML)), 0644)
+}
+
+func generateArchiveHTML(posts []*Post) error {
+	if _, err := os.Stat(filepath.Join("layouts", "archive.html")); os.IsNotExist(err) {
+		return nil
+	}
+
+	sorted := make([]*Post, len(posts))
+	copy(sorted, posts)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].Date.After(sorted[j].Date)
+	})
+
+	tmpl, err := template.New("archive.html").Funcs(template.FuncMap{
+		"formatDate": formatDate,
+	}).ParseFiles("layouts/archive.html")
+	if err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, sorted); err != nil {
+		return err
+	}
+
+	outputDir := filepath.Join("public", "archive")
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
+		return err
+	}
+
+	path := filepath.Join(outputDir, "index.html")
+	return os.WriteFile(path, []byte(formatHTML(buf.String())), 0644)
 }
 
 func copyStaticFiles() error {
