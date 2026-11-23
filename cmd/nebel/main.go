@@ -11,6 +11,9 @@ var CLI struct {
 	} `cmd:"" help:"Create a new post."`
 	Generate struct {
 	} `cmd:"" help:"Generate files."`
+	Serve struct {
+		Addr string `default:"localhost:4000" help:"Address to listen on."`
+	} `cmd:"" help:"Serve public/ and regenerate on changes."`
 }
 
 func main() {
@@ -23,6 +26,11 @@ func main() {
 		}
 	case "generate":
 		err := nebel.Generate()
+		if err != nil {
+			panic(err)
+		}
+	case "serve":
+		err := nebel.Serve(CLI.Serve.Addr)
 		if err != nil {
 			panic(err)
 		}

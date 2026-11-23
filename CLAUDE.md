@@ -19,6 +19,9 @@ go run cmd/nebel/main.go new [site-name]
 
 # Build/generate the static site
 go run cmd/nebel/main.go generate
+
+# Serve public/ and regenerate on changes to posts/, layouts/, static/
+go run cmd/nebel/main.go serve
 ```
 
 ## Project Structure
@@ -29,6 +32,7 @@ go run cmd/nebel/main.go generate
 │   └── nebel/
 │       └── main.go       # Main entry point
 ├── generate.go           # Site generation logic
+├── serve.go              # Local server with auto-regeneration
 ├── new.go               # New site creation logic
 ├── go.mod               # Go module definition
 └── go.sum               # Go dependencies checksums
@@ -44,7 +48,7 @@ go run cmd/nebel/main.go generate
 ## Development Notes
 
 - The project uses Go modules for dependency management
-- Main commands are `new` and `generate`
+- Main commands are `new`, `generate` and `serve`
 - Static files are copied from a "static" directory to "public" during generation
 - HTML output is formatted for readability
 
